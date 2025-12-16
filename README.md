@@ -6,7 +6,7 @@ This subpackage is a minimal, inference-only version of FUnIE-GAN in PyTorch. It
 Usage
 
 - Install dependencies: `pip install -r requirements.txt`
-- Run enhancement: `python enhance_image.py /path/to/input.jpg /path/to/output.jpg`
+- Run enhancement: `python run.py /path/to/input.jpg /path/to/output.jpg`
 
 Notes
 
