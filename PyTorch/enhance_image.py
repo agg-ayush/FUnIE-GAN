@@ -1,0 +1,65 @@
+import argparse
+import os
+from typing import Tuple
+
+import torch
+from PIL import Image
+
+from nets.funiegan import GeneratorFunieGAN as FunieGenerator
+
+
+def load_generator(weights_path: str, device: torch.device) -> torch.nn.Module:
+    model = FunieGenerator()
+    checkpoint = torch.load(weights_path, map_location=device)
+    model.load_state_dict(checkpoint)
+    model.to(device)
+    model.eval()
+    return model
+
+
+def read_image(path: str) -> Image.Image:
+    return Image.open(path).convert("RGB")
+
+
+def pil_to_tensor(img: Image.Image) -> torch.Tensor:
+    arr = torch.ByteTensor(torch.ByteStorage.from_buffer(img.tobytes()))
+    arr = arr.view(img.size[1], img.size[0], 3)
+    arr = arr.permute(2, 0, 1).float() / 255.0
+    return arr.unsqueeze(0)
+
+
+def tensor_to_pil(t: torch.Tensor) -> Image.Image:
+    t = t.squeeze(0).clamp(0, 1)
+    t = (t * 255.0).byte()
+    t = t.permute(1, 2, 0).cpu().numpy()
+    return Image.fromarray(t, mode="RGB")
+
+
+def enhance_image(input_path: str, output_path: str, weights_path: str) -> Tuple[str, str]:
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    model = load_generator(weights_path, device)
+    img = read_image(input_path)
+    x = pil_to_tensor(img).to(device)
+    with torch.no_grad():
+        y = model(x)
+    out = tensor_to_pil(y)
+    os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
+    out.save(output_path)
+    return input_path, output_path
+
+
+def parse_args():
+    p = argparse.ArgumentParser(description="Enhance underwater image with FUnIE-GAN (PyTorch)")
+    p.add_argument("input", help="Path to input image")
+    p.add_argument("output", help="Path to save enhanced image")
+    p.add_argument("--weights", default=os.path.join(os.path.dirname(__file__), "models", "funie_generator.pth"), help="Path to generator weights (.pth)")
+    return p.parse_args()
+
+
+def main():
+    args = parse_args()
+    enhance_image(args.input, args.output, args.weights)
+
+
+if __name__ == "__main__":
+    main()
