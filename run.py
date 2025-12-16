@@ -51,14 +51,19 @@ def enhance_image(input_path: str, output_path: str, weights_path: str) -> Tuple
 def parse_args():
     p = argparse.ArgumentParser(description="Enhance underwater image with FUnIE-GAN (PyTorch)")
     p.add_argument("input", help="Path to input image")
-    p.add_argument("output", help="Path to save enhanced image")
+    p.add_argument("output", nargs="?", default=None, help="Path to save enhanced image (default: output/<input_filename>)")
     p.add_argument("--weights", default=os.path.join(os.path.dirname(__file__), "models", "funie_generator.pth"), help="Path to generator weights (.pth)")
     return p.parse_args()
 
 
 def main():
     args = parse_args()
-    enhance_image(args.input, args.output, args.weights)
+    output_path = args.output
+    if output_path is None:
+        input_basename = os.path.basename(args.input)
+        output_path = os.path.join("output", input_basename)
+    enhance_image(args.input, output_path, args.weights)
+    print(f"Enhanced image saved to: {output_path}")
 
 
 if __name__ == "__main__":
