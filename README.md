@@ -5,12 +5,11 @@ This subpackage is a minimal, inference-only version of FUnIE-GAN in PyTorch. It
 
 Usage
 
-- Install dependencies: `pip install -r requirements.txt` (requires PyTorch to be pre-installed)
+- Install dependencies: `pip install -r requirements.txt`
 - Run enhancement: `python run.py /path/to/input.jpg [output_path]`
   - If no output path is specified, saves to `output/<input_filename>`
 
 Notes
 
-- Requires PyTorch (torch>=1.10). Install separately if needed.
 - The script defaults to using `models/funie_generator.pth`. You can override via `--weights`.
 - CUDA will be used automatically if available; otherwise CPU.
