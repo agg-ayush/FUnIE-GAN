@@ -22,9 +22,9 @@ def read_image(path: str) -> Image.Image:
 
 
 def pil_to_tensor(img: Image.Image) -> torch.Tensor:
-    arr = torch.ByteTensor(torch.ByteStorage.from_buffer(img.tobytes()))
-    arr = arr.view(img.size[1], img.size[0], 3)
-    arr = arr.permute(2, 0, 1).float() / 255.0
+    import numpy as np
+    arr = np.array(img)
+    arr = torch.from_numpy(arr).permute(2, 0, 1).float() / 255.0
     return arr.unsqueeze(0)
 
 
@@ -39,10 +39,26 @@ def enhance_image(input_path: str, output_path: str, weights_path: str) -> Tuple
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = load_generator(weights_path, device)
     img = read_image(input_path)
+    
+    # Ensure dimensions are divisible by 32 for U-Net architecture
+    w, h = img.size
+    new_w = ((w + 31) // 32) * 32
+    new_h = ((h + 31) // 32) * 32
+    if (w, h) != (new_w, new_h):
+        img = img.resize((new_w, new_h), Image.LANCZOS)
+        original_size = (w, h)
+    else:
+        original_size = None
+    
     x = pil_to_tensor(img).to(device)
     with torch.no_grad():
         y = model(x)
     out = tensor_to_pil(y)
+    
+    # Resize back to original if needed
+    if original_size:
+        out = out.resize(original_size, Image.LANCZOS)
+    
     os.makedirs(os.path.dirname(output_path) or ".", exist_ok=True)
     out.save(output_path)
     return input_path, output_path
